@@ -52,6 +52,24 @@
     <main class="product-catalog">
         <h2>The Abstract Collection</h2>
         
+        <div class="filter-controls">
+            <label for="product-filter">Filter by Type:</label>
+            <select id="product-filter">
+                <option value="all">Show All</option>
+                <option value="T-Shirt">T-Shirts</option>
+                <option value="Hoodie">Hoodies</option>
+                <option value="Bag">Bags</option>
+            </select>
+
+            <label for="product-sort">Sort By:</label>
+            <select id="product-sort">
+                <option value="default">Default Order</option>
+                <option value="price-asc">Price: Low to High</option>
+                <option value="price-desc">Price: High to Low</option>
+                <option value="name-asc">Name: A to Z</option>
+            </select>
+        </div>
+        
         <div class="product-grid" id="product-grid-container">
             <p class="loading-message">Loading Eco-Friendly Designs...</p>
         </div>
@@ -66,18 +84,19 @@
     </footer>
     
     <script>
-        // Get the container where we will display the products
+        // === Global Variables to store and manage product data ===
         const productGrid = document.getElementById('product-grid-container');
+        const filterSelect = document.getElementById('product-filter');
+        const sortSelect = document.getElementById('product-sort');
+        let allProducts = []; // This will hold the raw data from the Printful API
 
         // === REQUIRED STEP: REPLACE "YOUR_STRIPE_PUBLISHABLE_KEY" with your actual pk_test_... key ===
-        const stripe = Stripe('YOUR_STRIPE_PUBLISHABLE_KEY'); 
+        const stripe = Stripe('pk_test_YOUR_STRIPE_PUBLISHABLE_KEY'); 
 
         // Function to build and insert the HTML for one product card
         function createProductCard(product) {
-            // Use the product thumbnail URL from Printful
             const imageUrl = product.image_url || 'https://via.placeholder.com/300x400?text=No+Image';
             
-            // Generate the HTML string using the data from Printful
             const html = `
                 <div class="product-card">
                     <img src="${imageUrl}" alt="${product.name}" class="product-image">
@@ -91,22 +110,77 @@
             
             return html;
         }
-        
-        // === 3. ADDED: Checkout Logic (redirectToCheckout and attachBuyButtonListeners) ===
 
-        // Function to handle the actual checkout process when a button is clicked
-        async function redirectToCheckout(productId) {
+        // === Rendering Function (Redraws the grid based on the current products array) ===
+        function renderProducts(productsToDisplay) {
+            productGrid.innerHTML = ''; // Clear existing cards
+
+            if (productsToDisplay.length === 0) {
+                 productGrid.innerHTML = '<p class="loading-message">No products match your current filters.</p>';
+                 return;
+            }
+
+            let allCardsHtml = '';
+            productsToDisplay.forEach(product => {
+                allCardsHtml += createProductCard(product);
+            });
+            productGrid.innerHTML = allCardsHtml;
+            attachBuyButtonListeners(); // Re-attach listeners after rendering
+        }
+
+
+        // === Filtering and Sorting Logic ===
+        function applyFiltersAndSort() {
+            let filteredProducts = [...allProducts]; // Start with a copy of all products
             
-            // Show the user something is happening (optional: disable button here)
+            const filterValue = filterSelect.value;
+            const sortValue = sortSelect.value;
+
+            // --- FILTERING ---
+            if (filterValue !== 'all') {
+                filteredProducts = filteredProducts.filter(product => 
+                    // This is a simple check: does the product name contain the filter word?
+                    product.name.toLowerCase().includes(filterValue.toLowerCase())
+                );
+            }
+
+            // --- SORTING ---
+            if (sortValue !== 'default') {
+                filteredProducts.sort((a, b) => {
+                    if (sortValue === 'price-asc') {
+                        // Compare price (a - b) for ascending
+                        return parseFloat(a.price) - parseFloat(b.price);
+                    } else if (sortValue === 'price-desc') {
+                        // Compare price (b - a) for descending
+                        return parseFloat(b.price) - parseFloat(a.price);
+                    } else if (sortValue === 'name-asc') {
+                        // Compare names alphabetically
+                        return a.name.localeCompare(b.name);
+                    }
+                    return 0;
+                });
+            }
+
+            // Render the manipulated list
+            renderProducts(filteredProducts);
+        }
+
+        // === Event Listeners for Controls ===
+        function setupEventListeners() {
+            filterSelect.addEventListener('change', applyFiltersAndSort);
+            sortSelect.addEventListener('change', applyFiltersAndSort);
+        }
+
+        // === Checkout Logic ===
+        async function redirectToCheckout(productId) {
             productGrid.innerHTML = '<p class="loading-message">Redirecting to Secure Checkout...</p>';
 
-            // 1. Call our Vercel backend to create a Stripe Checkout Session
             const response = await fetch('/api/create-checkout', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ productId }), // Send the product ID to the server
+                body: JSON.stringify({ productId }),
             });
 
             const session = await response.json();
@@ -115,22 +189,19 @@
                 console.error(session.error);
                 alert('Could not start checkout: ' + session.error);
                 // Re-display products if checkout fails
-                fetchAndDisplayProducts(); 
+                applyFiltersAndSort(); 
                 return;
             }
 
-            // 2. Redirect the customer to the Stripe-hosted checkout page
             const result = await stripe.redirectToCheckout({
                 sessionId: session.id,
             });
 
             if (result.error) {
-                // If `redirectToCheckout` fails due to a browser or network issue
                 console.error(result.error.message);
             }
         }
 
-        // Function to attach event listeners after products are displayed
         function attachBuyButtonListeners() {
             const buyButtons = document.querySelectorAll('.buy-button');
             buyButtons.forEach(button => {
@@ -141,39 +212,31 @@
             });
         }
 
-        // Main function to fetch the data from our Vercel API endpoint
+
+        // === Main Fetch Function ===
         async function fetchAndDisplayProducts() {
             try {
-                // 1. Fetch data from our Vercel serverless function
+                productGrid.innerHTML = '<p class="loading-message">Loading Eco-Friendly Designs...</p>';
+
                 const response = await fetch('/api/get-products');
                 const data = await response.json();
                 
-                // 2. Check if the fetch was successful and we have products
                 if (data.success && data.products && data.products.length > 0) {
                     
-                    // Clear the loading message
-                    productGrid.innerHTML = ''; 
+                    // SAVE the fetched data to the global variable
+                    allProducts = data.products; 
                     
-                    // 3. Loop through all products received (from both Store 1 and Store 2)
-                    let allCardsHtml = '';
-                    data.products.forEach(product => {
-                        allCardsHtml += createProductCard(product);
-                    });
+                    // Initial display is the default filter/sort
+                    applyFiltersAndSort(); 
                     
-                    // 4. Insert all the generated HTML cards into the grid
-                    productGrid.innerHTML = allCardsHtml;
-                    
-                    // 5. Attach the click listeners to the new Buy buttons
-                    attachBuyButtonListeners(); 
+                    // Set up the listeners for the controls
+                    setupEventListeners();
 
                 } else {
-                    // Display an error or "no products found" message
                     productGrid.innerHTML = '<p class="loading-message">Sorry, we couldn\'t load any products right now. Please check back later.</p>';
-                    console.error('API returned no products or an error:', data);
                 }
 
             } catch (error) {
-                // Display an error if the network request fails
                 productGrid.innerHTML = '<p class="loading-message">A network error occurred while fetching products.</p>';
                 console.error('Fetch error:', error);
             }
