@@ -5,10 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="styles.css">
     <title>Products | RaGuiRoMo.Store</title>
+    <style>
+        /* Add a simple style for a loading message */
+        .loading-message {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.5em;
+            color: #e63946; /* Our Bauhaus Red accent */
+        }
+    </style>
 </head>
 <body>
     <header class="navbar">
-        <div class="logo">RaGuiRoMo.Store</div>
+        <div class="logo"><a href="index.html">RaGuiRoMo.Store</a></div>
         <nav class="nav-links">
             <a href="products.html">Shop</a>
             <a href="#">About</a>
@@ -18,36 +27,11 @@
 
     <main class="product-catalog">
         <h2>The Abstract Collection</h2>
-        <div class="product-grid">
-            
-            <div class="product-card">
-                <img src="https://via.placeholder.com/300x400?text=Product+1" alt="Primary Geometric T-Shirt" class="product-image">
-                <div class="product-info">
-                    <h3>Primary Geometric Tee</h3>
-                    <p class="price">$35.00</p>
-                    <a href="#" class="view-details">View Details</a>
-                </div>
-            </div>
-
-            <div class="product-card">
-                <img src="https://via.placeholder.com/300x400?text=Product+2" alt="Minimalist Line Art Hoodie" class="product-image">
-                <div class="product-info">
-                    <h3>Line Art Hoodie</h3>
-                    <p class="price">$65.00</p>
-                    <a href="#" class="view-details">View Details</a>
-                </div>
-            </div>
-
-            <div class="product-card">
-                <img src="https://via.placeholder.com/300x400?text=Product+3" alt="Abstract Circle Block Tote Bag" class="product-image">
-                <div class="product-info">
-                    <h3>Circle Block Bag</h3>
-                    <p class="price">$40.00</p>
-                    <a href="#" class="view-details">View Details</a>
-                </div>
-            </div>
-
-            </div>
+        
+        <div class="product-grid" id="product-grid-container">
+            <p class="loading-message">Loading Eco-Friendly Designs...</p>
+        </div>
+        
     </main>
 
     <footer class="footer">
@@ -56,5 +40,71 @@
             <a href="#">IG</a> | <a href="#">FB</a>
         </div>
     </footer>
+    
+    <script>
+        // Get the container where we will display the products
+        const productGrid = document.getElementById('product-grid-container');
+
+        // Function to build and insert the HTML for one product card
+        function createProductCard(product) {
+            // Use the product thumbnail URL from Printful
+            const imageUrl = product.image_url || 'https://via.placeholder.com/300x400?text=No+Image';
+            
+            // Generate the HTML string using the data from Printful
+            const html = `
+                <div class="product-card">
+                    <img src="${imageUrl}" alt="${product.name}" class="product-image">
+                    <div class="product-info">
+                        <h3>${product.name}</h3>
+                        <p class="price">$${parseFloat(product.price).toFixed(2)}</p>
+                        <a href="#" class="view-details">View Details</a>
+                    </div>
+                </div>
+            `;
+            
+            return html;
+        }
+
+        // Main function to fetch the data from our Vercel API endpoint
+        async function fetchAndDisplayProducts() {
+            try {
+                // 1. Fetch data from our Vercel serverless function
+                const response = await fetch('/api/get-products');
+                const data = await response.json();
+                
+                // 2. Check if the fetch was successful and we have products
+                if (data.success && data.products && data.products.length > 0) {
+                    
+                    // Clear the loading message
+                    productGrid.innerHTML = ''; 
+                    
+                    // 3. Loop through all products received (from both Store 1 and Store 2)
+                    let allCardsHtml = '';
+                    data.products.forEach(product => {
+                        allCardsHtml += createProductCard(product);
+                    });
+                    
+                    // 4. Insert all the generated HTML cards into the grid
+                    productGrid.innerHTML = allCardsHtml;
+                    
+                    // Remove the 'loading-message' class to reset the container's display property if needed
+                    productGrid.classList.remove('loading-message');
+
+                } else {
+                    // Display an error or "no products found" message
+                    productGrid.innerHTML = '<p class="loading-message">Sorry, we couldn\'t load any products right now. Please check back later.</p>';
+                    console.error('API returned no products or an error:', data);
+                }
+
+            } catch (error) {
+                // Display an error if the network request fails
+                productGrid.innerHTML = '<p class="loading-message">A network error occurred while fetching products.</p>';
+                console.error('Fetch error:', error);
+            }
+        }
+
+        // Call the main function when the page loads
+        fetchAndDisplayProducts();
+    </script>
 </body>
 </html>
