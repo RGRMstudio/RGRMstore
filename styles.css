@@ -223,3 +223,42 @@ a:hover {
         grid-template-columns: 1fr; 
     }
 }
+/* --- Filter and Sort Control Styling --- */
+.filter-controls {
+    display: flex;
+    justify-content: flex-end; /* Push controls to the right */
+    gap: 30px; /* Space between filter and sort */
+    margin-bottom: 30px;
+    padding: 0 40px; 
+    max-width: 1200px;
+    margin-left: auto; /* Center the container */
+    margin-right: auto;
+    font-weight: bold;
+    text-transform: uppercase;
+    border-bottom: 1px solid #ccc; /* Subtle geometric divider */
+    padding-bottom: 15px;
+}
+
+.filter-controls label {
+    font-size: 0.9em;
+    margin-right: 5px;
+    color: #111;
+}
+
+.filter-controls select {
+    padding: 8px 12px;
+    border: 1px solid #111;
+    background-color: #fff;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.9em;
+}
+
+/* Ensure mobile view stacks the controls */
+@media (max-width: 600px) {
+    .filter-controls {
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+    }
+}
