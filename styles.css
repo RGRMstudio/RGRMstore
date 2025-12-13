@@ -1,0 +1,131 @@
+/* Bauhaus-Inspired Minimalist Styles */
+
+/* Universal Reset and Default Font */
+* {
+    box-sizing: border-box; /* Makes managing widths and padding easier */
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Arial', sans-serif; /* A simple, geometric font */
+    line-height: 1.6;
+    background-color: #f8f8f8; /* Light background */
+    color: #111; /* Dark text */
+}
+
+/* --- Global Styling --- */
+
+/* Hyperlinks and Buttons */
+a {
+    color: #111;
+    text-decoration: none; /* Remove the underline - keep it clean */
+    transition: color 0.3s;
+}
+
+a:hover {
+    color: #e63946; /* A vibrant accent color for interaction (Bauhaus Red) */
+}
+
+/* --- Header/Navbar Styling --- */
+.navbar {
+    display: flex; /* Arranges items in a row */
+    justify-content: space-between; /* Puts space between the logo and links */
+    align-items: center;
+    padding: 20px 40px;
+    border-bottom: 2px solid #111; /* Strong line-work, a Bauhaus signature */
+}
+
+.logo {
+    font-weight: 900;
+    letter-spacing: 2px;
+    font-size: 1.5em;
+}
+
+.nav-links a {
+    margin-left: 30px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+/* --- Hero Section Styling --- */
+.hero {
+    min-height: 70vh; /* Takes up 70% of the screen height */
+    display: flex;
+    flex-direction: column; /* Stacks content vertically */
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 40px;
+    background-color: #fff; /* White block for contrast */
+}
+
+.hero h1 {
+    font-size: 3em;
+    margin-bottom: 0.5em;
+    line-height: 1.1;
+    max-width: 800px;
+    border-bottom: 5px solid #e63946; /* The abstract twist/geometric accent */
+    padding-bottom: 10px;
+}
+
+.hero p {
+    font-size: 1.2em;
+    margin-bottom: 30px;
+}
+
+.cta-button {
+    background-color: #111;
+    color: #fff;
+    padding: 15px 30px;
+    border: 2px solid #111;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.cta-button:hover {
+    background-color: #e63946;
+    border-color: #e63946;
+    color: #fff;
+}
+
+/* --- Features Section Styling --- */
+.features {
+    display: flex;
+    justify-content: space-around;
+    padding: 60px 40px;
+    background-color: #f8f8f8;
+}
+
+.feature-box {
+    width: 30%;
+    padding: 20px;
+    border: 1px solid #ccc;
+    text-align: center;
+}
+
+.feature-box h3 {
+    color: #e63946;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+}
+
+/* --- Footer Styling --- */
+.footer {
+    padding: 20px 40px;
+    background-color: #111;
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9em;
+}
+
+.footer a {
+    color: #fff;
+    margin-left: 15px;
+}
+
+.footer a:hover {
+    color: #e63946;
+}
