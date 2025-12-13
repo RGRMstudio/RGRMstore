@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="styles.css">
     <title>Products | RaGuiRoMo.Store</title>
+    
+    <script src="https://js.stripe.com/v3/"></script> 
+    
     <style>
         /* Add a simple style for a loading message */
         .loading-message {
@@ -12,6 +15,27 @@
             padding: 50px;
             font-size: 1.5em;
             color: #e63946; /* Our Bauhaus Red accent */
+        }
+
+        /* Styling for the new Buy Button (Minimalist Bauhaus style) */
+        .buy-button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            background-color: #e63946; /* Bold red accent */
+            color: #fff;
+            border: 2px solid #e63946;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .buy-button:hover {
+            background-color: #111;
+            border-color: #111;
         }
     </style>
 </head>
@@ -45,6 +69,9 @@
         // Get the container where we will display the products
         const productGrid = document.getElementById('product-grid-container');
 
+        // === REQUIRED STEP: REPLACE "YOUR_STRIPE_PUBLISHABLE_KEY" with your actual pk_test_... key ===
+        const stripe = Stripe('YOUR_STRIPE_PUBLISHABLE_KEY'); 
+
         // Function to build and insert the HTML for one product card
         function createProductCard(product) {
             // Use the product thumbnail URL from Printful
@@ -57,12 +84,61 @@
                     <div class="product-info">
                         <h3>${product.name}</h3>
                         <p class="price">$${parseFloat(product.price).toFixed(2)}</p>
-                        <a href="#" class="view-details">View Details</a>
+                        <button class="buy-button" data-product-id="product_id_${product.id}">Buy Now</button> 
                     </div>
                 </div>
             `;
             
             return html;
+        }
+        
+        // === 3. ADDED: Checkout Logic (redirectToCheckout and attachBuyButtonListeners) ===
+
+        // Function to handle the actual checkout process when a button is clicked
+        async function redirectToCheckout(productId) {
+            
+            // Show the user something is happening (optional: disable button here)
+            productGrid.innerHTML = '<p class="loading-message">Redirecting to Secure Checkout...</p>';
+
+            // 1. Call our Vercel backend to create a Stripe Checkout Session
+            const response = await fetch('/api/create-checkout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ productId }), // Send the product ID to the server
+            });
+
+            const session = await response.json();
+
+            if (session.error) {
+                console.error(session.error);
+                alert('Could not start checkout: ' + session.error);
+                // Re-display products if checkout fails
+                fetchAndDisplayProducts(); 
+                return;
+            }
+
+            // 2. Redirect the customer to the Stripe-hosted checkout page
+            const result = await stripe.redirectToCheckout({
+                sessionId: session.id,
+            });
+
+            if (result.error) {
+                // If `redirectToCheckout` fails due to a browser or network issue
+                console.error(result.error.message);
+            }
+        }
+
+        // Function to attach event listeners after products are displayed
+        function attachBuyButtonListeners() {
+            const buyButtons = document.querySelectorAll('.buy-button');
+            buyButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const productId = button.dataset.productId;
+                    redirectToCheckout(productId);
+                });
+            });
         }
 
         // Main function to fetch the data from our Vercel API endpoint
@@ -87,8 +163,8 @@
                     // 4. Insert all the generated HTML cards into the grid
                     productGrid.innerHTML = allCardsHtml;
                     
-                    // Remove the 'loading-message' class to reset the container's display property if needed
-                    productGrid.classList.remove('loading-message');
+                    // 5. Attach the click listeners to the new Buy buttons
+                    attachBuyButtonListeners(); 
 
                 } else {
                     // Display an error or "no products found" message
