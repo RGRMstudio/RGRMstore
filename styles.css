@@ -129,3 +129,97 @@ a:hover {
 .footer a:hover {
     color: #e63946;
 }
+/* --- Products Catalog Styling --- */
+.product-catalog {
+    padding: 60px 40px;
+    text-align: center;
+}
+
+.product-catalog h2 {
+    font-size: 2.5em;
+    margin-bottom: 40px;
+    text-transform: uppercase;
+    /* Adding a geometric element above the title */
+    border-top: 5px solid #111; 
+    padding-top: 15px;
+    display: inline-block;
+}
+
+/* The Grid Layout: Using CSS Grid for geometric product alignment */
+.product-grid {
+    display: grid;
+    /* Create three columns of equal width */
+    grid-template-columns: repeat(3, 1fr); 
+    gap: 30px; /* Space between the product cards */
+    max-width: 1200px; /* Keep the grid centered and contained */
+    margin: 0 auto;
+}
+
+/* Styling for each individual product box */
+.product-card {
+    border: 1px solid #ccc;
+    background-color: #fff;
+    padding-bottom: 10px;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.product-card:hover {
+    transform: translateY(-5px); /* Lift slightly on hover */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.product-image {
+    width: 100%;
+    height: auto;
+    display: block;
+    /* A sharp, geometric image style */
+    border-bottom: 2px solid #e63946; /* Bauhaus Red line to separate image from info */
+}
+
+.product-info {
+    padding: 15px;
+    text-align: left;
+}
+
+.product-info h3 {
+    font-size: 1.2em;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+}
+
+.price {
+    font-weight: bold;
+    color: #e63946;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.view-details {
+    display: inline-block;
+    color: #111;
+    font-weight: bold;
+    border: 1px solid #111;
+    padding: 5px 10px;
+    text-transform: uppercase;
+    font-size: 0.85em;
+}
+
+.view-details:hover {
+    background-color: #111;
+    color: #fff;
+}
+
+/* Adjust grid layout for smaller screens (Mobile view) */
+@media (max-width: 768px) {
+    .product-grid {
+        /* Change to 2 columns on tablets/small desktops */
+        grid-template-columns: repeat(2, 1fr); 
+    }
+}
+
+@media (max-width: 500px) {
+    .product-grid {
+        /* Change to 1 column on phones */
+        grid-template-columns: 1fr; 
+    }
+}
