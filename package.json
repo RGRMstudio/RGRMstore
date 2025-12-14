@@ -17,7 +17,6 @@
     "stripe": "^14.16.0",
     "micro": "^10.0.1",
     "node-fetch": "^3.3.2" 
-    // Keep any other dependencies like @vercel/analytics, etc.
 },
   "devDependencies": {
     "eslint": "^8",
