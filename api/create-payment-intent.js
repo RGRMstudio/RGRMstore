@@ -1,29 +1,32 @@
-// /api/create-payment-intent.js
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method Not Allowed' });
-  }
+  if (req.method === 'POST') {
+    try {
+      // Create Checkout Sessions from body params.
+      const session = await stripe.checkout.sessions.create({
+        line_items: [{
+          price_data: {
+            currency: 'usd',
+            product_data: { name: 'Premium Art Print' },
+            unit_amount: 2500, // $25.00
+          },
+          quantity: 1,
+        }],
+        mode: 'payment',
+        success_url: `${req.headers.origin}/success`,
+        cancel_url: `${req.headers.origin}/cancel`,
+      });
 
-  try {
-    const { amount, order_id } = req.body;
-
-    // Create a PaymentIntent with the order amount and currency
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: amount, // Total in cents (e.g., 1000 = $10.00)
-      currency: 'usd',
-      metadata: { order_id },
-      automatic_payment_methods: { enabled: true },
-    });
-
-    res.status(200).json({
-      clientSecret: paymentIntent.client_secret,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: err.message });
+      // Send the session ID back to the checkout page
+      res.status(200).json({ clientSecret: session.id });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  } else {
+    res.setHeader('Allow', 'POST');
+    res.status(405).end('Method Not Allowed');
   }
 }
