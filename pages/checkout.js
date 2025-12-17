@@ -1,122 +1,85 @@
-// /pages/checkout.js
-
-import React, { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
-import { Elements, useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js';
+import { useState } from 'react';
 
-// 1. Load Stripe using the PUBLIC key from Vercel
+// Initialize Stripe with your Public Key from Vercel Environment Variables
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
+export default function Checkout() {
+  const [status, setStatus] = useState('idle');
 
-// --- The Payment Form Component ---
-const CheckoutForm = ({ orderTotalInCents }) => {
-  const stripe = useStripe();
-  const elements = useElements();
-
-  const [errorMessage, setErrorMessage] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-
-    if (!stripe || !elements) {
-      return;
-    }
-
-    setIsLoading(true);
-    setErrorMessage(null);
+  const handleCheckout = async () => {
+    setStatus('loading');
 
     try {
-        // A. Call your server-side API to create the PaymentIntent
-        const response = await fetch('/api/create-payment-intent', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                amount: orderTotalInCents, 
-                order_id: 'RGRM-TEST-123', 
-            }),
-        });
+      // 1. Create the Payment Intent on your server
+      const res = await fetch('/api/create-payment-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: 2500, // Amount in cents ($25.00)
+          order_id: 'RGRM-' + Date.now(),
+        }),
+      });
 
-        const data = await response.json();
-        const clientSecret = data.clientSecret;
+      const { clientSecret } = await res.json();
 
-        if (!clientSecret) {
-            setErrorMessage(data.message || 'Failed to initiate payment.');
-            setIsLoading(false);
-            return;
-        }
+      if (!clientSecret) {
+        throw new Error("Failed to retrieve client secret from Stripe.");
+      }
 
-        // B. Confirm the payment with Stripe
-        const { error } = await stripe.confirmPayment({
-          elements,
-          clientSecret,
-          confirmParams: {
-            // Where to redirect the customer after a successful payment
-            return_url: `${window.location.origin}/order-success`, 
-          },
-        });
+      // 2. Redirect to Stripe's secure checkout page
+      const stripe = await stripePromise;
+      const { error } = await stripe.redirectToCheckout({
+        sessionId: clientSecret, 
+      });
 
-        if (error) {
-          setErrorMessage(error.message);
-        }
-    } catch (error) {
-        setErrorMessage('An unexpected error occurred.');
+      if (error) {
+        console.error("Stripe Error:", error);
+        setStatus('error');
+      }
+    } catch (err) {
+      console.error("Checkout Error:", err);
+      setStatus('error');
     }
-
-    setIsLoading(false);
   };
 
-  const displayTotal = (orderTotalInCents / 100).toFixed(2);
-
   return (
-    <form onSubmit={handleSubmit} style={{maxWidth: '500px', margin: '20px auto', padding: '20px', border: '1px solid #eee', borderRadius: '8px'}}>
-      <h2>Order Total: ${displayTotal}</h2>
-
-      {/* Stripe payment widget */}
-      <PaymentElement />
-
-      <button disabled={isLoading || !stripe || !elements} className="pay-button" style={{
-          marginTop: '20px', 
-          padding: '10px 20px', 
-          backgroundColor: isLoading ? '#ccc' : '#0070f3',
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: isLoading ? 'not-allowed' : 'pointer'
+    <div style={{ padding: '50px', textAlign: 'center', fontFamily: 'sans-serif' }}>
+      <h1 style={{ letterSpacing: '2px', textTransform: 'uppercase' }}>RaGuiRoMo Store</h1>
+      <p>Bauhaus-Inspired Minimalist Collection</p>
+      
+      <div style={{ 
+        border: '2px solid black', 
+        padding: '30px', 
+        display: 'inline-block', 
+        marginTop: '20px' 
       }}>
-        {isLoading ? 'Processing...' : `Pay Now`}
-      </button>
+        <h2>Premium Art Print</h2>
+        <p style={{ fontSize: '24px' }}>$25.00 USD</p>
+        
+        <button
+          onClick={handleCheckout}
+          disabled={status === 'loading'}
+          style={{
+            backgroundColor: 'black',
+            color: 'white',
+            padding: '15px 40px',
+            border: 'none',
+            fontSize: '16px',
+            cursor: 'pointer',
+            marginTop: '10px'
+          }}
+        >
+          {status === 'loading' ? 'PROCESSING...' : 'PURCHASE NOW'}
+        </button>
 
-      {/* Display error messages */}
-      {errorMessage && <div style={{color: 'red', marginTop: '10px'}}>{errorMessage}</div>}
-    </form>
+        {status === 'error' && (
+          <p style={{ color: 'red', marginTop: '10px' }}>
+            There was an error connecting to Stripe. Please check your keys.
+          </p>
+        )}
+      </div>
+    </div>
   );
-};
-
-
-// --- The Main Page Wrapper ---
-export default function CheckoutPage() {
-    // !!! IMPORTANT: REPLACE this with the REAL calculated cart total in CENTS
-    const orderTotalInCents = 4599; // Example: $45.99 
-
-    const options = {
-        mode: 'payment',
-        amount: orderTotalInCents,
-        currency: 'usd',
-    };
-
-    if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
-        return <div>Error: Stripe Publishable Key is missing. Check Vercel Environment Variables.</div>
-    }
-
-    return (
-        <div style={{textAlign: 'center', paddingTop: '50px'}}>
-            <h1>RaGuiRoMo Checkout</h1>
-
-            {/* Stripe Elements Provider */}
-            <Elements stripe={stripePromise} options={options}>
-                <CheckoutForm orderTotalInCents={orderTotalInCents} />
-            </Elements>
-        </div>
-    );
 }
+
