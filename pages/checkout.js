@@ -2,16 +2,19 @@ import { loadStripe } from '@stripe/stripe-js';
 import { useState } from 'react';
 
 // Initialize Stripe with your Public Key from Vercel Environment Variables
+// It must be named exactly NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY in Vercel
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
 export default function Checkout() {
-  const [status, setStatus] = useState('idle');
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(null);
 
   const handleCheckout = async () => {
-    setStatus('loading');
+    setLoading(true);
+    setErrorMessage(null);
 
     try {
-      // 1. Create the Payment Intent on your server
+      // 1. Create a Checkout Session on the server side
       const res = await fetch('/api/create-payment-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -24,7 +27,7 @@ export default function Checkout() {
       const { clientSecret } = await res.json();
 
       if (!clientSecret) {
-        throw new Error("Failed to retrieve client secret from Stripe.");
+        throw new Error("Could not retrieve client secret. Check your API keys.");
       }
 
       // 2. Redirect to Stripe's secure checkout page
@@ -34,12 +37,13 @@ export default function Checkout() {
       });
 
       if (error) {
-        console.error("Stripe Error:", error);
-        setStatus('error');
+        setErrorMessage(error.message);
       }
     } catch (err) {
-      console.error("Checkout Error:", err);
-      setStatus('error');
+      console.error("Checkout error:", err);
+      setErrorMessage("There was an error connecting to Stripe. Please check your keys.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -59,7 +63,7 @@ export default function Checkout() {
         
         <button
           onClick={handleCheckout}
-          disabled={status === 'loading'}
+          disabled={loading}
           style={{
             backgroundColor: 'black',
             color: 'white',
@@ -67,19 +71,19 @@ export default function Checkout() {
             border: 'none',
             fontSize: '16px',
             cursor: 'pointer',
-            marginTop: '10px'
+            marginTop: '10px',
+            opacity: loading ? 0.5 : 1
           }}
         >
-          {status === 'loading' ? 'PROCESSING...' : 'PURCHASE NOW'}
+          {loading ? 'PROCESSING...' : 'PURCHASE NOW'}
         </button>
 
-        {status === 'error' && (
-          <p style={{ color: 'red', marginTop: '10px' }}>
-            There was an error connecting to Stripe. Please check your keys.
+        {errorMessage && (
+          <p style={{ color: 'red', marginTop: '15px', fontWeight: 'bold' }}>
+            {errorMessage}
           </p>
         )}
       </div>
     </div>
   );
 }
-
