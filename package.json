@@ -2,6 +2,9 @@
   "name": "raguiromo-store-app",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -10,13 +13,13 @@
   },
   "dependencies": {
     "next": "^14.2.10",
-    "react": "^18",
-    "react-dom": "^18",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "stripe": "^14.0.0",
     "@stripe/stripe-js": "^2.0.0"
   },
   "devDependencies": {
-    "eslint": "^9.0.0",
+    "eslint": "^8.57.1",
     "eslint-config-next": "^14.2.10"
   }
 }
