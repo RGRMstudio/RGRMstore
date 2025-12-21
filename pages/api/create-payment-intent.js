@@ -19,9 +19,9 @@ export default async function handler(req, res) {
     const session = await stripe.checkout.sessions.create({
       line_items: [
         {
-          price_data: {
+          price_data: 
             currency: 'usd',
-            product_data: { name: 'Premium Art Print' },
+            product_data:  name: 'Premium Art Print' ,
             unit_amount: 2500, // $25.00
           },
           quantity: 1,
