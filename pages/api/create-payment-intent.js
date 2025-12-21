@@ -8,9 +8,13 @@ export default async function handler(req, res) {
       const session = await stripe.checkout.sessions.create({
         line_items: [
           {
+            // Fix: Changed 'price_' to 'price_data'
             price_data: {
               currency: 'usd',
-              product_data: { name: 'Premium Art Print' },
+              // Fix: Changed 'product_' to 'product_data'
+              product_data: { 
+                name: 'Premium Art Print' 
+              },
               unit_amount: 2500, // $25.00
             },
             quantity: 1,
@@ -21,6 +25,7 @@ export default async function handler(req, res) {
         cancel_url: `${req.headers.origin}/cancel`,
       });
 
+      // Returns the session ID to your checkout page
       res.status(200).json({ id: session.id });
     } catch (err) {
       res.status(500).json({ error: err.message });
