@@ -1,89 +1,87 @@
-import { loadStripe } from '@stripe/stripe-js';
+// pages/checkout.js
 import { useState } from 'react';
+import { loadStripe } from '@stripe/stripe-js';
 
-// Initialize Stripe with your Public Key from Vercel Environment Variables
-// It must be named exactly NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY in Vercel
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+const stripePromise = loadStripe(
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+);
 
-export default function Checkout() {
+export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState(null);
+  const [error, setError] = useState('');
 
-  const handleCheckout = async () => {
+  async function handlePurchase() {
     setLoading(true);
-    setErrorMessage(null);
+    setError('');
 
     try {
-      // 1. Create a Checkout Session on the server side
       const res = await fetch('/api/create-payment-intent', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: 2500, // Amount in cents ($25.00)
-          order_id: 'RGRM-' + Date.now(),
-        }),
       });
 
-      const { clientSecret } = await res.json();
+      const data = await res.json();
 
-      if (!clientSecret) {
-        throw new Error("Could not retrieve client secret. Check your API keys.");
+      if (!res.ok || !data.sessionId) {
+        throw new Error(
+          data.error || 'There was an error connecting to Stripe.'
+        );
       }
 
-      // 2. Redirect to Stripe's secure checkout page
       const stripe = await stripePromise;
+
       const { error } = await stripe.redirectToCheckout({
-        sessionId: clientSecret, 
+        sessionId: data.sessionId,
       });
 
       if (error) {
-        setErrorMessage(error.message);
+        setError(error.message);
       }
     } catch (err) {
-      console.error("Checkout error:", err);
-      setErrorMessage("There was an error connecting to Stripe. Please check your keys.");
+      setError(
+        err.message ||
+          'There was an error connecting to Stripe. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
-    <div style={{ padding: '50px', textAlign: 'center', fontFamily: 'sans-serif' }}>
-      <h1 style={{ letterSpacing: '2px', textTransform: 'uppercase' }}>RaGuiRoMo Store</h1>
+    <main style={{ textAlign: 'center', padding: '4rem 1rem' }}>
+      <h1>RAGUIROMO STORE</h1>
       <p>Bauhaus-Inspired Minimalist Collection</p>
-      
-      <div style={{ 
-        border: '2px solid black', 
-        padding: '30px', 
-        display: 'inline-block', 
-        marginTop: '20px' 
-      }}>
+
+      <section
+        style={{
+          border: '1px solid black',
+          maxWidth: '400px',
+          margin: '2rem auto',
+          padding: '2rem',
+        }}
+      >
         <h2>Premium Art Print</h2>
-        <p style={{ fontSize: '24px' }}>$25.00 USD</p>
-        
+        <p>$25.00 USD</p>
+
         <button
-          onClick={handleCheckout}
+          onClick={handlePurchase}
           disabled={loading}
           style={{
-            backgroundColor: 'black',
+            padding: '0.75rem 2rem',
+            background: 'black',
             color: 'white',
-            padding: '15px 40px',
             border: 'none',
-            fontSize: '16px',
             cursor: 'pointer',
-            marginTop: '10px',
-            opacity: loading ? 0.5 : 1
           }}
         >
-          {loading ? 'PROCESSING...' : 'PURCHASE NOW'}
+          {loading ? 'Processing…' : 'PURCHASE NOW'}
         </button>
 
-        {errorMessage && (
-          <p style={{ color: 'red', marginTop: '15px', fontWeight: 'bold' }}>
-            {errorMessage}
+        {error && (
+          <p style={{ color: 'red', marginTop: '1rem' }}>
+            {error}
           </p>
         )}
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }
