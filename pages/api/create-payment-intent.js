@@ -8,10 +8,8 @@ export default async function handler(req, res) {
       const session = await stripe.checkout.sessions.create({
         line_items: [
           {
-            // Changed price_ to price_data
             price_data: {
               currency: 'usd',
-              // Changed product_ to product_data
               product_data: { 
                 name: 'Premium Art Print' 
               },
